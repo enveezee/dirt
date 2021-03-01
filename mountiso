@@ -1,0 +1,23 @@
+#!/bin/bash
+USERCD="~/Desktop/CDROM"
+case $(id -u) in
+	0) case $(grep " /media/cdrom " /etc/mtab | wc -l) in
+      0) mount -o loop "$1" /media/cdrom;;
+		  1) umount /media/cdrom
+		  if [ "$1" != "" ]; then 
+          mount -o loop "$1" /media/cdrom
+      fi
+      ;;
+	  esac
+  ;;
+	*)
+    if [ -d "$USERCD" ]; then 
+      killall fuseiso 
+		  if [ "$1" != ""]; then 
+        fuseiso -p "$1" "$USERCD"
+      fi
+		else 
+      fuseiso -p "$1" "$USERCD"
+    fi
+  ;;
+esac
