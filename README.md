@@ -11,3 +11,5 @@ toggle-screenkey - script to toggle screenkey from a hotkey when screen recordin
 transcode - example of simplifying wrapper to ffmpeg for transcoding
 
 wmtoggle - example of a window manager toggle script to switch between two wms
+
+ziso - simple zenity based ISO writer using dd for people who want a GUI to write images to a thumbdrive
