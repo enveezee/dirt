@@ -1,0 +1,14 @@
+#!/bin/bash
+
+xuser = $(who | awk '$2 == "tty7" {print $1}')
+
+case $1 in
+	dock)
+		su "$xuser" -c "panel save undocked"
+		su "$xuser" -c "panel load docked"
+	;;
+	undock)
+		su "$xuser" -c "panel save docked"
+		su "$xuser" -c "panel load undocked"
+	;;
+esac
