@@ -1,0 +1,54 @@
+#!/bin/bash
+[ ! $infile ] && infile="$1"
+[ ! $outfile ] && outfile="${infile%.*}.m4v"
+[ ! $remove ] && remove="yes"
+[ ! $compress ] && compress="high"
+[ ! $rate ] && rate="1"
+[ ! $ratio ] && ratio="w" #"widescreen"
+[ ! $size ] && size="2" #"360"
+[ ! $acodec ] && acodec="aac"
+[ ! $vcodec ] && vcodec="libx264"
+case $compress in
+ 5|high)compression="28";vbitrate="128k";abitrate="64k";samplerate="16000";;
+ 4)compression="26";vbitrate="192k";abitrate="96k";samplerate="24000";;
+ 3|medium)compression="24";vbitrate="256k";abitrate="128k";samplerate="28800";;
+ 2)compression="22";vbitrate="360k";abitrate="160k";samplerate="36000";;
+ 1|low)compression="20";vbitrate="480k";abitrate="256k";samplerate="44100";;
+ 0|min|off)compression="0";vbitrate="512k";abitrate="320k";samplerate="48000";;
+esac
+case $rate in
+ 4|60)framerate="60";;
+ 3|45)framerate="45";;
+ 2|30)framerate="30";;
+ 1|movie)framerate="29.97" ;;
+ 0|15) framerate="15";;
+esac
+case $ratio in
+ f|full|fullscreen)aspect="4:3"
+  case $size in
+   1080|5|l)width="1440";height="1080";;
+   720|4)width="960";height="720";;
+   480|3|m)width="640";height="480";;
+   360|2)width="480";height="360";;
+   240|1)width="320";height="240";;
+   180|0|s)width="240";height="180";;
+  esac;;
+ w|wide|widescreen)aspect="16:9"
+  case $size in
+   1080|5|900)width="1600";height="900";;
+   720|4|l)width="1280";height="720";;
+   480|3|540)width="960";height="540";;
+   360|2|m)width="640";height="360";;
+   240|1|270)width="480";height="270";;
+   180|0|s)width="320";height="180";;
+  esac;;esac
+case $1 in
+ edit)nano $(which sv);exit;;
+ view)
+	echo "$vcodec: $aspect ($width x $height) @ $vbitrate ($framerate fps / $compression crf)"
+	echo "$acodec: $abitrate / $samplerate"
+	exit
+ ;;
+esac
+ffmpeg -y -i "$infile" -r "$framerate" -vcodec "$vcodec" -preset medium -flags +loop -cmp chroma -crf "$compression" -bt "$vbitrate" -refs 1 -coder 0 -me_method full -me_range 16 -subq 5 -partitions +parti4x4+parti8x8+partp8x8 -g 250 -keyint_min 25 -level 30 -trellis 2 -sc_threshold 40 -i_qfactor 0.71 -filter:v scale=w="$width":h="$height" -aspect "$aspect" -acodec "$acodec" -strict experimental -b:a "$abitrate" -ar "$samplerate" -ac 2 "$outfile"
+[ "$remove" == "yes" ] && rm "$infile"
