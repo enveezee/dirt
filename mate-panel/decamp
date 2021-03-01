@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+#   decamp - DeCruft A Mate-Panel configuration
+from configparser import ConfigParser
+from sys import argv
+
+panel = ConfigParser()
+
+panel.read_file(open(argv[1]))
+
+objects = panel['general']['object-id-list']
+toplevels = panel['general']['toplevel-id-list']
+
+print(
+    f'[general]\n'
+    f'object-id-list={objects}\n'
+    f'toplevel-id-list={toplevels}\n'
+)
+
+def name(arg):
+    return arg.split('/')[1]
+
+def parse(section):
+    for key in panel[section]:
+        print(f'{key}={panel[section][key]}')
+    print()
+
+def prop(arg):
+    if len(arg.split('/')) > 2:
+        return True
+    return False
+
+for section in panel:
+    if section == 'general':
+        continue
+    # Only print out toplevels that are in the id list.
+    if 'toplevel' in section and name(section) in toplevels:
+        print(f'[{section}]')
+        parse(section)
+    # Only print out objects that are in the id list.
+    if 'object' in section and name(section) in objects:
+        # Make sure the object is in a valid toplevel.
+        if not prop(section) and panel[section]['toplevel-id'] in toplevels:
+            print(f'[{section}]')
+            parse(section)
