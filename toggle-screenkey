@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+#   Toggle Screenkey and lose keyboard focus
+#
+
+# Name of window to focus when screenkey is running
+focus="Bottom Panel"
+
+# KeySym of hotkey used to launch the script (will be ignored)
+hotkey="XF86Tools"
+
+# if ~/.screenkey-lock exists:
+if [ -f ~/.screenkey-lock ]; then
+
+    # kill screenkey
+    kill $(awk '/pid/ {print $2}' ~/.screenkey-lock)
+
+    # focus previously focused window
+    xdotool windowfocus $(awk '/wid/ {print $2}' ~/.screenkey-lock)
+
+    # remove ~/.screenkey-lock file
+    rm ~/.screenkey-lock
+
+# if ~/.screenkey-lock doesn't exist:
+else
+
+    # save id of currently focused window
+    echo "wid $(xdotool getwindowfocus)" > ~/.screenkey-lock
+ 
+    # start screenkey
+    screenkey --no-systray --ignore "$hotkey"
+
+    # save pid of screenkey to ~/.screenkey-lock
+    echo "pid $(pgrep -nU $UID screenkey)" >> ~/.screenkey-lock
+   
+    # unfocus current window   
+    xdotool windowfocus $(xwininfo -name "$focus" | awk '/xwininfo/ {print $4}')
+    
+fi
