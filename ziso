@@ -1,0 +1,32 @@
+#!/bin/bash
+for device in /sys/block/sd*; do disk="/dev/${device##*/}"
+    if [[ ! $(lsblk -no mountpoint "$disk") ]]; then
+        disks+=("$disk")
+        disks+=("$(numfmt --to=iec-i --suffix=B --padding=7 < "$device/size")")
+    fi  
+done
+if (( ${#disks[*]} < 2 )); then
+    zenity --info --title "Error" --width=300\
+    --text "No usable disks found, try unmounting the disk you wish to write!"
+    exit 1
+fi
+disk=$(zenity --list --title "Choose a disk to write"\
+ --column "Disk" --column "Size" "${disks[@]}")
+if [[ "${device[*]}" =~ $disk ]]; then
+    zenity --info --title "Error" --width 300\
+    --text "Please select a device to write to!"
+    exit 1
+fi
+iso=$(zenity --title "Select an ISO file" --file-selection --file-filter="*.iso")
+if [[ "$iso" != *.iso ]]; then
+    zenity --info --title "Error" --width=300\
+    --text "Please select an ISO file to write!"
+    exit 1
+fi
+zenity --question --title "Confirm the write" --width 500\
+       --text "Write $iso to $disk?"
+case $? in
+    0) sudo cp "$iso" "$disk" | zenity --progress --pulsate --width 600\
+        --title "Writing ISO to USB" --text "Writing $iso to $disk";;    
+    1) exit 1;;
+esac
