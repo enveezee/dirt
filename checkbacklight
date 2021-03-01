@@ -1,0 +1,75 @@
+#!/bin/bash
+#	checkbacklight - script to hook udev and set min/max backlight
+
+# Set paths for the udev rule and settings file
+rule="/etc/udev/rules.d/99-checkbacklight.rules"
+settings="/etc/default/backlight"
+
+# Check for root permissions
+if [ "$(id -u)" == 0 ]; then
+
+	if [ ! $(which checkbacklight) ]; then
+
+		echo "script isn't executable in root's PATH."
+
+		exit 1
+
+	fi
+
+else
+
+	echo "You must be root to use this script."
+
+	exit 1
+
+fi
+
+# Check for backlightctl
+if [ ! $(which brightnessctl) ]; then
+
+	echo "brightnessctl not found, please install."
+
+	exit 1
+
+fi
+
+# Check for settings file, create if doesn't exist
+if [ ! -f "$settings" ]; then
+
+	echo "# Default settings for backlight" > "$settings"
+	echo "#  WARNING: there is no stupid-user protection here," >> "$settings"
+	echo "#   DO NOT set max_brightness to 0 or something." >> "$settings"
+	echo "max_brightness=$(brightnessctl m)" >> "$settings"
+	echo "min_brightness=0" >> "$settings"
+
+fi
+
+# Check for udev rule, create if doesn't exist
+if [ ! -f "$rule" ]; then
+
+	echo "ACTION=='change', SUBSYSTEM=='backlight', RUN+='$(which checkbacklight)'" > "$rule"
+
+	udevadm control --reload-rules
+
+	echo "udev rule created."
+
+	exit 0
+
+fi
+
+# Read settings file
+source "$settings"
+
+# Check the current brightness level
+current_brightness=$(brightnessctl g)
+
+# Adjust brightness if too high/low based on settings file
+if [ $(("$current_brightness")) -gt $(("$max_brightness")) ]; then
+
+        brightnessctl s "$max_brightness"
+
+elif [ $(("$current_brightness")) -lt $(("$min_brightness")) ]; then
+
+	brightnessctl s "$min_brightness"
+
+fi
