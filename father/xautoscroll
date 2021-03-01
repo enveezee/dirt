@@ -1,0 +1,43 @@
+#!/bin/bash
+#	AutoScroll under cursor using xdotool
+
+# Repeat Cycles (about 15/pg)
+repeat=15000
+
+# Speed Settings (in ms)
+Fastest=2000
+Fast=3000
+Normal=3500
+Slow=4000
+Slowest=5000
+
+function autoscroll {
+
+	# Display Dialog
+	action=$(yad --on-top --entry --title "AutoScroll"\
+		--button="gtk-ok:0" --button="cfg:2" --button="gtk-close:1"\
+		--text "Speed:" --entry-text\
+		"Normal" "Slow" "Slowest" "Fast" "Fastest")
+	
+	# Save return code
+	ret=$?
+
+	# Kill xdotool
+	killall xdotool
+
+	# Check return code and quit if user hit close	
+	[[ $ret -eq 1 ]] && exit 0
+
+	[[ $ret -eq 2 ]] && pluma /usr/local/bin/xautoscroll
+
+	# Else run xdotool with selected speed in background
+	let delay=$[action]/1000 	
+	sleep "$delay"
+	xdotool click --repeat "$repeat" --delay "$[action]" 5&
+
+	# Redisplay Dialog (loop function)
+	autoscroll
+}
+
+# Run autoscroll function
+autoscroll
