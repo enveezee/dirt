@@ -1,0 +1,10 @@
+#!/bin/bash
+if [ $(pgrep sawfish) ]; then
+
+	nohup marco --replace &
+
+elif [ $(pgrep marco) ]; then
+
+	nohup sawfish --replace &
+
+fi
