@@ -1,0 +1,135 @@
+#!/bin/bash
+#
+# Zenity ADB Push/Pull 0.5
+#
+#   A tool to push/pull files graphically to/from an android device with adb.
+
+title="Zenity ADB Push/Pull"
+
+# Attempt to detect an sdcard path
+sdcard=$(adb shell df -h /storage/* | awk '/storage\// {print $6}' | grep -v /emulated | cut -d / -f 3)
+
+# Set phone and sdcard storage paths
+phone="/storage/self/primary/"
+sdcrd="/storage/$sdcard/"
+
+# Check for adb devices
+check_adb () {
+    devices=$(adb devices -l | grep "usb:" | wc -l)
+    if [[ $devices != "1" ]]; then
+        zenity --info --title "$title" --text "ADB Device Not Found!"
+        exit 1
+    fi    
+}
+
+# List a directory on the android with zenity and allow selection of files.
+list_dir () {
+
+    # get output of directory listing via adb shell as a newline seperated array
+    IFS=$'\n' output=($(adb shell ls "$1"))
+
+    # if this is not the rootdir, then add a parentdir listing
+    if [[ $1 == "/" ]]; then list=(); else list=("../"); fi
+
+    # iterate over each line of output, make a directory listing
+    for line in ${output[@]}; do
+        name=$(echo "$line")
+        adb shell [[ -d $(printf %q "$1$name") ]] && name="$name/"
+        list+=("$name")
+    done
+
+    # display a zenity list dialog with the directory list
+	selection=$(zenity --list --title "$title"\
+		--text "Select a file, or press OK to select current directory"\
+		--print-column=ALL --width=400 --height=680\
+		--column "$1:" -- "${list[@]}")
+
+    # check to see if user pressed OK
+    if [[ $? == 0 ]]; then
+
+        # check the selection
+        case $selection in
+
+            # no selection was made, select current dir
+            "") echo "$1";;
+
+            # parent directory was selected, back out of current dir
+            "../") list_dir "$(dirname $1)/";;
+
+            # a directory was selected, list that directory
+            */) list_dir $(printf %q "$1$selection");;
+
+            # a file was selected, return that file's path
+            *) echo $(printf %q "$1$selection");;
+        esac
+    else
+        # user cancelled, exit script unsuccessfully
+        exit 1
+    fi
+}
+
+main () {
+    # display a zenity list dialog for the main menu
+	selection=$(zenity --list --title "$title"\
+		--text "Select pull to get files or push to send files"\
+		--print-column=1 --width=400 --height=200\
+		--column "Main Menu" --column "" "pull" "PC <- Android" "push" "PC -> Android")
+
+    # check to see if user pressed OK
+    if [[ $? == 0 ]]; then
+
+        # check the selection
+        case $selection in
+            "pull") pull;;
+            "push") push;;
+        esac
+    else
+        # user cancelled, exit script unsuccessfully
+        exit 1
+    fi
+}
+
+pull () {
+    # Allow user to browse for the source directory
+    src=$(list_dir "$phone")
+
+    # Exit script unsuccessfully if the user cancelled
+    [[ $? == 1 ]] && exit 1
+
+    # Allow user to browse for destination directory
+    dst=$(zenity --title "$title" --file-selection --directory)
+
+    # Exit script unsuccessfully if the user cancelled    
+    [[ $? == 1 ]] && exit 1
+
+    # Change dir to the destination directory
+    cd "$dst"
+
+    # Open a terminal to do the ADB pull transfer
+    x-terminal-emulator -e adb pull "$src"
+}
+
+push () {
+    # Allow user to browse for the source directory
+    src=$(zenity --title "$title" --file-selection)
+
+    # Exit script unsuccessfully if the user cancelled
+    [[ $? == 1 ]] && exit 1
+
+    # Allow user to browse for destination directory
+    dst=$(list_dir "$phone")
+
+    # Exit script unsuccessfully if the user cancelled    
+    [[ $? == 1 ]] && exit 1
+
+    # Make sure the destination is a directory
+    adb shell [[ -d $(printf %q "$dst") ]]
+    
+    # Get the parent dir of the file if its not a directory
+    if [[ $? == 1 ]]; then dst=$(dirname "$dst"); fi
+
+    # Open a terminal to do the ADB push transfer
+    x-terminal-emulator -e adb push "$src" "$dst"
+}
+
+check_adb && main
