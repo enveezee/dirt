@@ -1,0 +1,48 @@
+#!/bin/bash
+# Port mosh runs on
+mosh_port="13380"
+# Port ssh runs on
+ssh_port="13375"
+wifi="wlp3s0"
+# Names of home access points
+home=(
+"Homelinksys_2G"
+"Homelinksys_5G"
+"Homelinksys_2GEXT"
+"Homelinksys_5GEXT"
+)
+# Host to connect to from home
+localhost="10.0.0.2"
+# Host to connect to when not at home
+remotehost="1.2.3.4"
+# Default path to push/pull files from
+defaultfilepath="/home/$USER/"
+
+IFS=":" read -a connection < <(nmcli -t device | grep "$wifi")
+
+if [[ "${connection[2]}" != "connected" ]]; then
+    echo "You are not connected to the internet dumbass!"
+    exit 1
+fi
+
+if [[ "${home[*]}" =~ ${connection[3]} ]]; then
+    server="$localhost"
+else
+    server="$remotehost"
+fi
+
+case $1 in
+    push|send|tx)
+        scp -P "$ssh_port" "$2" "$server:$defaultfilepath/$3"
+    ;;
+    pull|recv|rx)
+        if [[ "$3" ]]; then dest="$3"; else dest="."; fi
+        scp -P "$ssh_port" "$server:$defaultfilepath/$2" "$3"
+    ;;
+    ssh)
+        ssh -C -p "$ssh_port" "$server"
+    ;;
+    mosh|*)
+        mosh -p "$mosh_port" --ssh="ssh -p $ssh_port" "$server"
+    ;;
+esac
