@@ -2,9 +2,10 @@
 
 case $1 in
 	load)
-		cat "~/.mate-panel.$2" | dconf load /org/mate/panel/
+		cat ~/".mate-panel.$2" | dconf load /org/mate/panel/
 	;;
 	save)
-		dconf dump /org/mate/panel/ > "~/.mate-panel.$2"
+		dconf dump /org/mate/panel/ > ~/.mate-panel.last
+		decamp ~/.mate-panel.last > ~/".mate-panel.$2"
 	;;
 esac
