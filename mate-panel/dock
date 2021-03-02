@@ -1,6 +1,6 @@
 #!/bin/bash
 
-xuser = $(who | awk '$2 == "tty7" {print $1}')
+xuser=$(who | awk '$2 == "tty7" {print $1}')
 
 case $1 in
 	dock)
