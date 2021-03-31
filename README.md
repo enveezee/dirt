@@ -4,6 +4,8 @@ checkbacklight - script to set limits on backlight using udev
 
 mountiso - script to mount isos with fusemount
 
+powerball.py - script to check winning tickets on powerball.com JSON api, works for lotto-america, powerball
+
 server - script to more easily access a personal server
 
 toggle-screenkey - script to toggle screenkey from a hotkey when screen recording
