@@ -33,7 +33,7 @@ class Powerball():
                         print(self.checkNumbers(numbers, ticket, multiplier))
 
         else:
-            print(response)
+            print(self.response)
 
     def checkNumbers(self, numbers, ticket, multiplier=1):
         match = 0
